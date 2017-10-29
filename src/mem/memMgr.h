@@ -340,10 +340,16 @@ private:
       #endif // MEM_DEBUG
       // TODO ---
       // 1. Make sure to promote t to a multiple of SIZE_T
+      t = toSizeT(t);
       // 2. Check if the requested memory is greater than the block size.
       //    If so, throw a "bad_alloc()" exception.
       //    cerr << "Requested memory (" << t << ") is greater than block size"
       //         << "(" << _blockSize << "). " << "Exception raised...\n";
+      if (t > _blockSize) {
+        cerr << "Requested memory (" << t << ") is greater than block size"
+             << "(" << _blockSize << "). " << "Exception raised...\n";
+        throw bad_alloc();
+      }
       // 3. Check the _recycleList first...
       //    #ifdef MEM_DEBUG
       //    cout << "Recycled from _recycleList[" << n << "]..." << ret << endl;
@@ -367,6 +373,39 @@ private:
       //    #ifdef MEM_DEBUG
       //    cout << "Memory acquired... " << ret << endl;
       //    #endif // MEM_DEBUG
+      size_t n = getArraySize(t);
+      MemRecycleList<T>* list = getMemRecycleList(n);
+      if (list->_first) {
+        ret = list->popFront();
+        #ifdef MEM_DEBUG
+        cout << "Recycled from _recycleList[" << n << "]..." << ret << endl;
+        #endif // MEM_DEBUG
+      } else {
+        if (_activeBlock->getMem(t,ret)) {
+          #ifdef MEM_DEBUG
+          cout << "Memory acquired... " << ret << endl;
+          #endif // MEM_DEBUG
+        } else {
+          if (_activeBlock->getRemainSize() < toSizeT(S)) {
+            _activeBlock = new MemBlock<T>(_activeBlock, _blockSize);
+            #ifdef MEM_DEBUG
+            cout << "New MemBlock... " << _activeBlock << endl;
+            #endif // MEM_DEBUG
+            _activeBlock->getMem(t, ret);
+          } else {
+            size_t rn = getArraySize(_activeBlock->getRemainSize());
+            #ifdef MEM_DEBUG
+            cout << "Recycling " << ret << " to _recycleList[" << rn << "]\n";
+            #endif // MEM_DEBUG
+            getMemRecycleList(rn)->pushFront(ret);
+            _activeBlock = new MemBlock<T>(_activeBlock, _blockSize);
+            #ifdef MEM_DEBUG
+            cout << "New MemBlock... " << _activeBlock << endl;
+            #endif // MEM_DEBUG
+            _activeBlock->getMem(t, ret);
+          }
+        }
+      }
       return ret;
    }
    // Get the currently allocated number of MemBlock's
