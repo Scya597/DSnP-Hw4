@@ -47,7 +47,7 @@ private:                                                                    \
 //
 // To promote 't' to the nearest multiple of SIZE_T;
 // e.g. Let SIZE_T = 8;  toSizeT(7) = 8, toSizeT(12) = 16
-#define toSizeT(t) (t / SIZE_T) == 0 ? t : SIZE_T + (SIZE_T * (t / SIZE_T))  // TODO
+#define toSizeT(t) (t % SIZE_T) == 0 ? t : SIZE_T + (SIZE_T * (t / SIZE_T))  // TODO
 //
 // To demote 't' to the nearest multiple of SIZE_T
 // e.g. Let SIZE_T = 8;  downtoSizeT(9) = 8, downtoSizeT(100) = 96
@@ -90,7 +90,7 @@ class MemBlock
    bool getMem(size_t t, T*& ret) {
       // TODO
       t = toSizeT(t);
-      if ((_end - _ptr) < t) {
+      if (getRemainSize() < t) {
         return false;
       } else {
         ret = (T*) _ptr;
@@ -213,7 +213,7 @@ public:
         _activeBlock = nextBlock;
         nextBlock = _activeBlock->getNextBlock();
       }
-
+      _activeBlock->reset();
       for (size_t i = 0; i < R_SIZE; i++) {
         _recycleList[i].reset();
       }
@@ -222,8 +222,6 @@ public:
         _blockSize = b;
         delete _activeBlock;
         _activeBlock = new MemBlock<T>(0, _blockSize);
-      } else {
-        _activeBlock->reset();
       }
    }
    // Called by new
@@ -381,7 +379,7 @@ private:
         cout << "Recycled from _recycleList[" << n << "]..." << ret << endl;
         #endif // MEM_DEBUG
       } else {
-        if (_activeBlock->getMem(t,ret)) {
+        if (_activeBlock->getMem(t, ret)) {
           #ifdef MEM_DEBUG
           cout << "Memory acquired... " << ret << endl;
           #endif // MEM_DEBUG
@@ -419,7 +417,6 @@ private:
       }
       return count;
    }
-
 };
 
 #endif // MEM_MGR_H

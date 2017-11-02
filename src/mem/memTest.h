@@ -66,7 +66,7 @@ public:
    void newArrs(size_t n, size_t s) {
       // TODO
       for (size_t i = 0; i < n; i++) {
-        _objList.push_back(new MemTestObj[s]);
+        _arrList.push_back(new MemTestObj[s]);
       }
    }
    // Delete the object with position idx in _objList[]
