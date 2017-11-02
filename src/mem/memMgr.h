@@ -321,9 +321,10 @@ private:
       // TODO
       MemRecycleList<T>* temp = &_recycleList[m];
       while (temp->getArrSize() != n) {
-        temp = temp->getNextList();
-        if (temp->getArrSize() != n && temp->getNextList() == 0) {
+        if (temp->getNextList() == 0) {
           temp->setNextList(new MemRecycleList<T>(n));
+          temp = temp->getNextList();
+        } else {
           temp = temp->getNextList();
         }
       }
@@ -384,23 +385,31 @@ private:
           cout << "Memory acquired... " << ret << endl;
           #endif // MEM_DEBUG
         } else {
-          if (_activeBlock->getRemainSize() < toSizeT(S)) {
+          size_t remainSize = _activeBlock->getRemainSize();
+          if (remainSize < S) {
             _activeBlock = new MemBlock<T>(_activeBlock, _blockSize);
             #ifdef MEM_DEBUG
             cout << "New MemBlock... " << _activeBlock << endl;
             #endif // MEM_DEBUG
             _activeBlock->getMem(t, ret);
+            #ifdef MEM_DEBUG
+            cout << "Memory acquired... " << ret << endl;
+            #endif // MEM_DEBUG
           } else {
             size_t rn = getArraySize(_activeBlock->getRemainSize());
+            _activeBlock->getMem(downtoSizeT(remainSize), ret);
+            getMemRecycleList(rn)->pushFront(ret);
             #ifdef MEM_DEBUG
             cout << "Recycling " << ret << " to _recycleList[" << rn << "]\n";
             #endif // MEM_DEBUG
-            getMemRecycleList(rn)->pushFront(ret);
             _activeBlock = new MemBlock<T>(_activeBlock, _blockSize);
             #ifdef MEM_DEBUG
             cout << "New MemBlock... " << _activeBlock << endl;
             #endif // MEM_DEBUG
             _activeBlock->getMem(t, ret);
+            #ifdef MEM_DEBUG
+            cout << "Memory acquired... " << ret << endl;
+            #endif // MEM_DEBUG
           }
         }
       }
